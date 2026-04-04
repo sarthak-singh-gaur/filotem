@@ -7,9 +7,9 @@ interface FetchOptions extends RequestInit {
 export async function authFetch(endpoint: string, options: FetchOptions = {}) {
   const token = localStorage.getItem('filotem_token')
   
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...(options.headers || {}),
+    ...(options.headers as Record<string, string> || {}),
   }
 
   if (token) {
