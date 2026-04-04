@@ -1,0 +1,80 @@
+export function Logo({ className = '' }: { className?: string }) {
+  return (
+    <svg 
+      className={className} 
+      viewBox="0 0 220 220" 
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <style>
+          {`
+          .table {
+            transform-origin: center;
+            animation: scaleIn 0.6s ease-out forwards, pulse 2s infinite ease-in-out 1s;
+          }
+
+          .node {
+            opacity: 0;
+            transform-origin: center;
+            animation: fadeIn 0.4s ease forwards;
+          }
+
+          .n1 { animation-delay: 0.4s; }
+          .n2 { animation-delay: 0.6s; }
+          .n3 { animation-delay: 0.8s; }
+          .n4 { animation-delay: 1s; }
+
+          .line {
+            stroke-dasharray: 40;
+            stroke-dashoffset: 40;
+            animation: draw 0.6s ease forwards;
+          }
+
+          .l1 { animation-delay: 1.1s; }
+          .l2 { animation-delay: 1.2s; }
+          .l3 { animation-delay: 1.3s; }
+          .l4 { animation-delay: 1.4s; }
+
+          @keyframes scaleIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+          }
+
+          @keyframes fadeIn {
+            to { opacity: 1; }
+          }
+
+          @keyframes draw {
+            to { stroke-dashoffset: 0; }
+          }
+
+          @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+          }
+          `}
+        </style>
+      </defs>
+
+      {/* Table */}
+      <circle className="table" cx="110" cy="110" r="26"
+              fill="none" stroke="currentColor" strokeWidth="6"/>
+
+      {/* Nodes */}
+      <circle className="node n1" cx="110" cy="55" r="9" fill="currentColor"/>
+      <circle className="node n2" cx="165" cy="110" r="9" fill="currentColor"/>
+      <circle className="node n3" cx="110" cy="165" r="9" fill="currentColor"/>
+      <circle className="node n4" cx="55" cy="110" r="9" fill="currentColor"/>
+
+      {/* Lines */}
+      <line className="line l1" x1="110" y1="84" x2="110" y2="64"
+            stroke="currentColor" strokeWidth="4" strokeLinecap="round"/>
+      <line className="line l2" x1="136" y1="110" x2="156" y2="110"
+            stroke="currentColor" strokeWidth="4" strokeLinecap="round"/>
+      <line className="line l3" x1="110" y1="136" x2="110" y2="156"
+            stroke="currentColor" strokeWidth="4" strokeLinecap="round"/>
+      <line className="line l4" x1="84" y1="110" x2="64" y2="110"
+            stroke="currentColor" strokeWidth="4" strokeLinecap="round"/>
+    </svg>
+  )
+}
