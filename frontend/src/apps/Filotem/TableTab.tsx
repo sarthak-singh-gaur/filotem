@@ -63,7 +63,7 @@ export function TableTab({
   useEffect(() => {
     fetchData()
 
-    if (Notification.permission === 'default') {
+    if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission()
     }
 
@@ -104,8 +104,8 @@ export function TableTab({
       // Using msg.chatType avoids stale closures of the 'tables' state. 
       const mappedChatId = msg.chatType === 'table' ? msg.receiver : msg.sender
 
-      // Fire push notification if allowed natively
-      if (Notification.permission === 'granted' && user?.allowNotifications) {
+      // Fire push notification if allowed natively and supported
+      if ('Notification' in window && Notification.permission === 'granted' && user?.allowNotifications) {
         new Notification("New Filotem Message", { body: msg.text })
       }
 

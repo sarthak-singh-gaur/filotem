@@ -5,11 +5,12 @@ import { ThemeProvider } from './context/ThemeProvider'
 import { useAuth } from './context/useAuth'
 import { AuthPage } from './pages/AuthPage'
 import { CoverPage } from './pages/CoverPage'
+import { Capacitor } from '@capacitor/core'
 import FilotemApp from './apps/FilotemApp'
 
 function AuthGate() {
   const { user, isLoading } = useAuth()
-  const [showCover, setShowCover] = useState(true)
+  const [showCover, setShowCover] = useState(!Capacitor.isNativePlatform())
 
   if (showCover) {
     return <CoverPage onLaunch={() => setShowCover(false)} />
