@@ -1,10 +1,5 @@
 <svg width="220" height="220" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#D4AF37"/>
-      <stop offset="100%" stop-color="#B8962E"/>
-    </linearGradient>
-
     <style>
       .table {
         transform-origin: center;
@@ -58,21 +53,21 @@
 
   <!-- Table -->
   <circle class="table" cx="110" cy="110" r="26"
-          fill="none" stroke="url(#gold)" stroke-width="4"/>
+          fill="none" stroke="#F5F5F4" stroke-width="6"/>
 
   <!-- Nodes -->
-  <circle class="node n1" cx="110" cy="55" r="6" fill="url(#gold)"/>
-  <circle class="node n2" cx="165" cy="110" r="6" fill="url(#gold)"/>
-  <circle class="node n3" cx="110" cy="165" r="6" fill="url(#gold)"/>
-  <circle class="node n4" cx="55" cy="110" r="6" fill="url(#gold)"/>
+  <circle class="node n1" cx="110" cy="55" r="9" fill="#F5F5F4"/>
+  <circle class="node n2" cx="165" cy="110" r="9" fill="#F5F5F4"/>
+  <circle class="node n3" cx="110" cy="165" r="9" fill="#F5F5F4"/>
+  <circle class="node n4" cx="55" cy="110" r="9" fill="#F5F5F4"/>
 
   <!-- Lines -->
-  <line class="line l1" x1="110" y1="84" x2="110" y2="61"
-        stroke="url(#gold)" stroke-width="2"/>
-  <line class="line l2" x1="136" y1="110" x2="159" y2="110"
-        stroke="url(#gold)" stroke-width="2"/>
-  <line class="line l3" x1="110" y1="136" x2="110" y2="159"
-        stroke="url(#gold)" stroke-width="2"/>
-  <line class="line l4" x1="84" y1="110" x2="61" y2="110"
-        stroke="url(#gold)" stroke-width="2"/>
+  <line class="line l1" x1="110" y1="84" x2="110" y2="64"
+        stroke="#F5F5F4" stroke-width="4" stroke-linecap="round"/>
+  <line class="line l2" x1="136" y1="110" x2="156" y2="110"
+        stroke="#F5F5F4" stroke-width="4" stroke-linecap="round"/>
+  <line class="line l3" x1="110" y1="136" x2="110" y2="156"
+        stroke="#F5F5F4" stroke-width="4" stroke-linecap="round"/>
+  <line class="line l4" x1="84" y1="110" x2="64" y2="110"
+        stroke="#F5F5F4" stroke-width="4" stroke-linecap="round"/>
 </svg>
