@@ -56,7 +56,7 @@ export function TableTab({
       setTables(tablesData)
       setUnreadCounts(unreadsData)
     } finally {
-      setTimeout(() => setLoading(false), 200)
+      setLoading(false)
     }
   }
 

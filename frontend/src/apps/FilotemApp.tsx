@@ -96,9 +96,13 @@ export default function FilotemApp() {
           </div>
 
           {/* Dynamic Content List (Friends / Search) */}
-          <div className="flex-1 overflow-hidden p-4 pt-2">
-             {activeTab === 'table' && <TableTab onSelectFriend={handleSelectFriend} onSelectTable={handleSelectTable} activeChatId={activeChat?.id} />}
-             {activeTab === 'network' && <NetworkingTab />}
+          <div className="flex-1 overflow-hidden p-0 pt-0 flex flex-col relative w-full h-full">
+             <div className={`flex-1 h-full w-full px-4 overflow-hidden ${activeTab === 'table' ? 'flex flex-col' : 'hidden'}`}>
+               <TableTab onSelectFriend={handleSelectFriend} onSelectTable={handleSelectTable} activeChatId={activeChat?.id} />
+             </div>
+             <div className={`flex-1 h-full w-full px-4 overflow-hidden ${activeTab === 'network' ? 'flex flex-col' : 'hidden'}`}>
+               <NetworkingTab />
+             </div>
           </div>
 
           {/* Bottom User Profile Section */}
