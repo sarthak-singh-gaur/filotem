@@ -48,13 +48,8 @@ export function CoverPage({ onLaunch }: { onLaunch: () => void }) {
           </button>
           
           <a 
-            href="/filotem.apk" 
+            href="https://github.com/sarto-69/filotem/raw/main/filotem.apk" 
             download
-            // Fallback action if apk not available in public folder
-            onClick={() => {
-              // Usually the href points to the actual APK in the public/ folder
-              // If it's not generated, we might want to alert the user or let it naturally 404
-            }}
             className="w-full flex items-center justify-center gap-2 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 border border-stone-200 dark:border-stone-800 py-3.5 px-4 rounded-2xl font-bold hover:bg-stone-50 dark:hover:bg-stone-800 hover:scale-[1.02] active:scale-[0.98] transition-all"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
