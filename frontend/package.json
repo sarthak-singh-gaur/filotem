@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "sync-slim": "npm run build && rm -f dist/filotem.apk && npx cap sync android && cp public/filotem.apk dist/filotem.apk",
     "lint": "eslint .",
     "preview": "vite preview",
     "clean": "rm -rf dist",

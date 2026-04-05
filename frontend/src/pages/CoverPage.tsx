@@ -48,7 +48,7 @@ export function CoverPage({ onLaunch }: { onLaunch: () => void }) {
           </button>
           
           <a 
-            href="https://github.com/sarto-69/filotem/raw/main/filotem.apk" 
+            href="/filotem.apk" 
             download
             className="w-full flex items-center justify-center gap-2 bg-white dark:bg-stone-900 text-stone-900 dark:text-stone-100 border border-stone-200 dark:border-stone-800 py-3.5 px-4 rounded-2xl font-bold hover:bg-stone-50 dark:hover:bg-stone-800 hover:scale-[1.02] active:scale-[0.98] transition-all"
           >
