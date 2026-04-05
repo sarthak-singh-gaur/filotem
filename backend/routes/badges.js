@@ -24,6 +24,19 @@ router.post('/request', auth, async (req, res) => {
 
     const request = new BadgeRequest({ from: req.user, to: toUserId, type });
     await request.save();
+
+    // LIVELINESS: Notify recipient of new badge request
+    const io = req.app.get('io');
+    if (io) {
+      const fromUser = await User.findById(req.user).select('name username avatar');
+      io.to(toUserId.toString()).emit('badge_request', {
+        _id: request._id,
+        from: fromUser,
+        type: request.type,
+        status: 'pending'
+      });
+    }
+
     res.json(request);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -73,6 +86,15 @@ router.put('/requests/:id/accept', auth, async (req, res) => {
     // Mark request as accepted
     request.status = 'accepted';
     await request.save();
+
+    // LIVELINESS: Notify the original requester
+    const io = req.app.get('io');
+    if (io) {
+      io.to(request.from.toString()).emit('badge_accepted', {
+        type: request.type,
+        friendId: request.to
+      });
+    }
 
     // Clean up any other pending requests of same type involving either user
     await BadgeRequest.updateMany(

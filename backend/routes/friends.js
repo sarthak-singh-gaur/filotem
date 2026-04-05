@@ -26,6 +26,18 @@ router.post('/request', auth, async (req, res) => {
 
     const request = new FriendRequest({ from: req.user, to: toUserId });
     await request.save();
+
+    // POPUP NOTIFICATION: Notify recipient immediately
+    const io = req.app.get('io');
+    if (io) {
+      const fromUser = await User.findById(req.user).select('name username avatar');
+      io.to(toUserId.toString()).emit('friend_request', {
+        _id: request._id,
+        from: fromUser,
+        status: 'pending'
+      });
+    }
+
     res.json(request);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -58,6 +70,25 @@ router.put('/requests/:id/accept', auth, async (req, res) => {
     // Add each other as friends
     await User.findByIdAndUpdate(request.from, { $addToSet: { friends: request.to } });
     await User.findByIdAndUpdate(request.to,   { $addToSet: { friends: request.from } });
+
+    // LIVELINESS: Notify both users to refresh their lists
+    const io = req.app.get('io');
+    if (io) {
+      const fromUser = await User.findById(request.from).select('name username avatar');
+      const toUser = await User.findById(request.to).select('name username avatar');
+      
+      // Notify sender
+      io.to(request.from.toString()).emit('friend_accepted', {
+        friend: toUser,
+        msg: `${toUser.name} accepted your friend request!`
+      });
+      
+      // Notify receiver (the one who just clicked accept)
+      io.to(request.to.toString()).emit('friend_accepted', {
+        friend: fromUser,
+        msg: `You are now friends with ${fromUser.name}`
+      });
+    }
 
     res.json({ msg: 'Friend request accepted' });
   } catch (err) {
@@ -102,6 +133,14 @@ router.delete('/:friendId', auth, async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.user, { $pull: { friends: req.params.friendId } });
     await User.findByIdAndUpdate(req.params.friendId, { $pull: { friends: req.user } });
+    
+    // LIVELINESS: Notify both users to refresh lists
+    const io = req.app.get('io');
+    if (io) {
+      io.to(req.user.toString()).emit('friend_removed', { friendId: req.params.friendId });
+      io.to(req.params.friendId).emit('friend_removed', { friendId: req.user });
+    }
+    
     res.json({ msg: 'Friend removed' });
   } catch (err) {
     res.status(500).json({ error: err.message });

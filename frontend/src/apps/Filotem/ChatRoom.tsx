@@ -1,11 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
-import { io, Socket } from 'socket.io-client'
 import { authFetch } from '../../utils/apiClient'
 import { useAuth } from '../../context/useAuth'
+import { useSocket } from '../../context/useSocket'
 import { TableSettingsModal } from './Modals/TableSettingsModal.tsx'
 import { FriendProfileModal } from './Modals/FriendProfileModal.tsx'
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
 interface MessageDTO {
   _id: string
@@ -33,6 +31,8 @@ export function ChatRoom({
   onBack: () => void 
 }) {
   const { user } = useAuth()
+  const { socket, onlineUsers } = useSocket()
+  
   const [messages, setMessages] = useState<MessageDTO[]>([])
   const [inputText, setInputText] = useState('')
   const [showTableSettings, setShowTableSettings] = useState(false)
@@ -47,7 +47,6 @@ export function ChatRoom({
     setCurrentAvatar(avatar)
   }, [friendName, avatar])
 
-  const socketRef = useRef<Socket | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const optionsMenuRef = useRef<HTMLDivElement>(null)
   
@@ -91,7 +90,6 @@ export function ChatRoom({
 
   // Auto-scroll Down
   const scrollToBottom = () => {
-    // We rely on CSS 'scroll-behavior: smooth' in .butter-scroll for buttery motion
     messagesEndRef.current?.scrollIntoView()
   }
 
@@ -103,7 +101,7 @@ export function ChatRoom({
         data: { chatId: friendId, chatType }
       })
       // Notify sender via socket
-      socketRef.current?.emit('messages_read', {
+      socket?.emit('messages_read', {
         senderId: user?.id,
         receiverId: friendId,
         chatType
@@ -166,23 +164,13 @@ export function ChatRoom({
 
   useEffect(() => {
     fetchMessages()
+    if (!socket) return
 
-    const newSocket = io(API_URL, {
-      auth: { token: localStorage.getItem('filotem_token') }
-    })
+    if (chatType === 'table') {
+      socket.emit('join_table', friendId)
+    }
 
-    socketRef.current = newSocket
-
-    // Authenticate socket routing 
-    newSocket.on('connect', () => {
-      newSocket.emit('register_user', user?.id)
-      if (chatType === 'table') {
-        newSocket.emit('join_table', friendId)
-      }
-    })
-
-    newSocket.on('receive_message', (msg: MessageDTO) => {
-      // Validate room context
+    const handleReceiveMessage = (msg: MessageDTO) => {
       if (msg.chatType !== chatType) return
       
       const isInCurrentChat = chatType === 'table' 
@@ -193,15 +181,12 @@ export function ChatRoom({
 
       setMessages(prev => [...prev, msg])
       markAsRead()
-      scrollToBottom()
-    })
+    }
 
-    newSocket.on('message_sent', (msg: MessageDTO) => {
-      // Validate room context
+    const handleMessageSent = (msg: MessageDTO) => {
       if (msg.chatType !== chatType || msg.receiver !== friendId) return
 
       setMessages(prev => {
-        // Replace optimistic message
         const exists = prev.findIndex(m => m.tempId === msg.tempId)
         if (exists !== -1) {
           const updated = [...prev]
@@ -210,13 +195,10 @@ export function ChatRoom({
         }
         return [...prev, { ...msg, status: 'sent' }]
       })
-      scrollToBottom()
-    })
+    }
 
-    newSocket.on('messages_read_receipt', (data: any) => {
-      // If table receipt, only care if it's the right table
+    const handleReadReceipt = (data: any) => {
       if (chatType === 'table' && data.tableId !== friendId) return
-      // If DM receipt, only care if it's the right friend
       if (chatType === 'friend' && data.friendId !== friendId) return
       
       setMessages(prev => prev.map(m => {
@@ -226,26 +208,30 @@ export function ChatRoom({
         }
         return m
       }))
-    })
+    }
 
-    newSocket.on('table_updated', (table: any) => {
+    const handleTableUpdate = (table: any) => {
       if (chatType === 'table' && table._id === friendId) {
         setCurrentName(table.name)
         setCurrentAvatar(table.avatar)
       }
-    })
+    }
+
+    socket.on('receive_message', handleReceiveMessage)
+    socket.on('message_sent', handleMessageSent)
+    socket.on('messages_read_receipt', handleReadReceipt)
+    socket.on('table_updated', handleTableUpdate)
 
     return () => {
       if (chatType === 'table') {
-        newSocket.emit('leave_table', friendId)
+        socket.emit('leave_table', friendId)
       }
-      newSocket.off('receive_message')
-      newSocket.off('message_sent')
-      newSocket.off('messages_read_receipt')
-      newSocket.off('table_updated')
-      newSocket.disconnect()
+      socket.off('receive_message', handleReceiveMessage)
+      socket.off('message_sent', handleMessageSent)
+      socket.off('messages_read_receipt', handleReadReceipt)
+      socket.off('table_updated', handleTableUpdate)
     }
-  }, [friendId, chatType, user?.id])
+  }, [friendId, chatType, user?.id, socket])
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault()
@@ -265,8 +251,8 @@ export function ChatRoom({
 
     setMessages(prev => [...prev, optimisticMsg])
     setInputText('')
-
-    socketRef.current?.emit('send_message', {
+    
+    socket?.emit('send_message', {
       tempId,
       senderId: user?.id,
       receiverId: friendId,
@@ -291,7 +277,7 @@ export function ChatRoom({
 
   return (
     <div 
-      className="flex flex-col h-full bg-[#EAE6DF] dark:bg-stone-950 transition-all duration-300 relative select-none md:select-auto"
+      className="flex flex-col h-full bg-[#EAE6DF] dark:bg-stone-950 transition-all duration-300 relative"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -329,9 +315,9 @@ export function ChatRoom({
               )}
             </div>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span className={`w-1.5 h-1.5 rounded-full ${chatType === 'table' ? 'bg-indigo-500' : 'bg-green-500'}`}></span>
+              <span className={`w-1.5 h-1.5 rounded-full ${chatType === 'table' ? 'bg-indigo-500' : (onlineUsers.has(friendId) ? 'bg-green-500' : 'bg-stone-400')}`}></span>
               <span className="text-[10px] md:text-xs text-stone-500 font-medium">
-                {chatType === 'table' ? 'Friends Table' : 'Online'}
+                {chatType === 'table' ? 'Friends Table' : (onlineUsers.has(friendId) ? 'Online' : 'Offline')}
               </span>
             </div>
           </div>

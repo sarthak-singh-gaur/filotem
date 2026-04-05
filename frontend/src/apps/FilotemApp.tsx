@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { ChatRoom } from './Filotem/ChatRoom'
 import { NetworkingTab } from './Filotem/NetworkingTab'
 import { TableTab } from './Filotem/TableTab'
@@ -97,12 +98,31 @@ export default function FilotemApp() {
 
           {/* Dynamic Content List (Friends / Search) */}
           <div className="flex-1 overflow-hidden p-0 pt-0 flex flex-col relative w-full h-full">
-             <div className={`flex-1 h-full w-full px-4 overflow-hidden ${activeTab === 'table' ? 'flex flex-col' : 'hidden'}`}>
-               <TableTab onSelectFriend={handleSelectFriend} onSelectTable={handleSelectTable} activeChatId={activeChat?.id} />
-             </div>
-             <div className={`flex-1 h-full w-full px-4 overflow-hidden ${activeTab === 'network' ? 'flex flex-col' : 'hidden'}`}>
-               <NetworkingTab />
-             </div>
+             <AnimatePresence mode="wait">
+               {activeTab === 'table' ? (
+                 <motion.div 
+                   key="table"
+                   initial={{ x: -10, opacity: 0 }}
+                   animate={{ x: 0, opacity: 1 }}
+                   exit={{ x: 10, opacity: 0 }}
+                   transition={{ duration: 0.15, ease: "easeOut" }}
+                   className="flex-1 h-full w-full px-4 overflow-hidden flex flex-col"
+                 >
+                   <TableTab onSelectFriend={handleSelectFriend} onSelectTable={handleSelectTable} activeChatId={activeChat?.id} />
+                 </motion.div>
+               ) : (
+                 <motion.div 
+                   key="network"
+                   initial={{ x: 10, opacity: 0 }}
+                   animate={{ x: 0, opacity: 1 }}
+                   exit={{ x: -10, opacity: 0 }}
+                   transition={{ duration: 0.15, ease: "easeOut" }}
+                   className="flex-1 h-full w-full px-4 overflow-hidden flex flex-col"
+                 >
+                   <NetworkingTab />
+                 </motion.div>
+               )}
+             </AnimatePresence>
           </div>
 
           {/* Bottom User Profile Section */}
@@ -149,7 +169,7 @@ export default function FilotemApp() {
         `}>
           {activeChat ? (
             <div className="w-full h-full p-0 md:p-4">
-              <div className="flex-1 overflow-y-auto w-full h-full max-w-6xl mx-auto shadow-2xl rounded-t-3xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900/40">
+              <div className="flex-1 w-full h-full max-w-6xl mx-auto shadow-2xl rounded-t-3xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900/40">
                  <ChatRoom 
                    friendId={activeChat.id} 
                    friendName={activeChat.name} 

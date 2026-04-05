@@ -21,6 +21,15 @@ router.post('/', auth, async (req, res) => {
     });
 
     await table.save();
+
+    // LIVELINESS: Notify all members to refresh their lists
+    const io = req.app.get('io');
+    if (io) {
+      table.members.forEach(memberId => {
+        io.to(memberId.toString()).emit('table_created', table);
+      });
+    }
+
     res.json(table);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -165,6 +174,15 @@ router.delete('/:id', auth, async (req, res) => {
     }
 
     await Table.findByIdAndDelete(req.params.id);
+
+    // LIVELINESS: Notify all members to refresh their lists
+    const io = req.app.get('io');
+    if (io) {
+      table.members.forEach(memberId => {
+        io.to(memberId.toString()).emit('table_deleted', { tableId: req.params.id });
+      });
+    }
+
     res.json({ msg: 'Table deleted permanently' });
   } catch (err) {
     res.status(500).json({ error: err.message });

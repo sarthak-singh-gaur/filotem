@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { authFetch } from '../../../utils/apiClient'
 import { useAuth } from '../../../context/useAuth'
+import { useSocket } from '../../../context/useSocket'
 
 export function ProfileModal({ onClose }: { onClose: () => void }) {
   const { user, refreshSession } = useAuth()
+  const { requestNotificationPermission } = useSocket()
   
   const [name, setName] = useState(user?.name || '')
   const [username, setUsername] = useState(user?.username || '')
@@ -58,6 +60,11 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
     }
   }
 
+  const handleEnableNotifications = async () => {
+    await requestNotificationPermission()
+    setAllowNotifications(true)
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 backdrop-blur-sm p-4">
       <div className="w-full max-w-md bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -72,7 +79,7 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
-        <form onSubmit={handleSave} className="p-6 space-y-6">
+        <form onSubmit={handleSave} className="p-6 space-y-6 max-h-[85vh] overflow-y-auto">
           
           {/* Avatar Section */}
           <div className="flex flex-col items-center justify-center space-y-3 relative">
@@ -92,6 +99,18 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
           </div>
 
           <div className="space-y-4">
+            {/* ENABLE NOTIFICATIONS BUTTON */}
+            <button
+               type="button"
+               onClick={handleEnableNotifications}
+               className="w-full py-3 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700/80 text-stone-900 dark:text-stone-100 rounded-2xl flex items-center justify-center gap-2 transition-all group active:scale-95"
+            >
+              <div className="p-1.5 bg-indigo-500 rounded-lg text-white group-hover:animate-shake">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+              </div>
+              <span className="text-sm font-bold tracking-tight">Enable System Notifications</span>
+            </button>
+
             <div>
               <label className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-1 block">Display Name</label>
               <input 
@@ -127,8 +146,8 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
             <div className="pt-2 border-t border-stone-200 dark:border-stone-800 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-stone-800 dark:text-stone-200">Push Notifications</h3>
-                  <p className="text-xs text-stone-500 font-medium mt-0.5">Allow browser alerts for new messages</p>
+                  <h3 className="text-sm font-bold text-stone-800 dark:text-stone-200">Alert Sounds</h3>
+                  <p className="text-xs text-stone-500 font-medium mt-0.5">Play sound for new messages</p>
                 </div>
                 <button
                   type="button"

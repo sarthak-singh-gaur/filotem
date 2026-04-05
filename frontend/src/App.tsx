@@ -1,6 +1,7 @@
 
 import { useState } from 'react'
 import { AuthProvider } from './context/AuthProvider'
+import { SocketProvider } from './context/SocketContext'
 import { ThemeProvider } from './context/ThemeProvider'
 import { useAuth } from './context/useAuth'
 import { AuthPage } from './pages/AuthPage'
@@ -34,7 +35,11 @@ function AuthGate() {
     return <AuthPage />
   }
 
-  return <FilotemApp />
+  return (
+    <SocketProvider>
+      <FilotemApp />
+    </SocketProvider>
+  )
 }
 
 export default function App() {
