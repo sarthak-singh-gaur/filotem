@@ -22,8 +22,14 @@ export function CoverPage({ onLaunch }: { onLaunch: () => void }) {
       <div className="max-w-md w-full flex flex-col items-center text-center space-y-6">
         
         {/* App Logo/Icon */}
-        <div className="mb-4 transform hover:scale-105 transition-transform duration-300 text-stone-900 dark:text-stone-100 mix-blend-multiply dark:mix-blend-normal">
-          <svg width="220" height="220" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" className="w-32 h-32 drop-shadow-2xl">
+        <div className="mb-4 transform hover:scale-105 transition-transform duration-300 drop-shadow-2xl">
+          <svg width="220" height="220" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" className="w-32 h-32">
+            <defs>
+              <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#D4AF37"/>
+                <stop offset="100%" stopColor="#B8962E"/>
+              </linearGradient>
+            </defs>
             <style>
               {`
                 .table {
@@ -65,18 +71,18 @@ export function CoverPage({ onLaunch }: { onLaunch: () => void }) {
               `}
             </style>
             
-            <rect x="10" y="10" width="200" height="200" rx="44" className="fill-transparent stroke-current opacity-10" strokeWidth="2"/>
+            <rect x="10" y="10" width="200" height="200" rx="44" fill="#0B0B0B"/>
 
-            <circle className="table" cx="110" cy="110" r="26" fill="none" stroke="currentColor" strokeWidth="4"/>
-            <circle className="node n1" cx="110" cy="55" r="6" fill="currentColor"/>
-            <circle className="node n2" cx="165" cy="110" r="6" fill="currentColor"/>
-            <circle className="node n3" cx="110" cy="165" r="6" fill="currentColor"/>
-            <circle className="node n4" cx="55" cy="110" r="6" fill="currentColor"/>
+            <circle className="table" cx="110" cy="110" r="26" fill="none" stroke="url(#gold)" strokeWidth="4"/>
+            <circle className="node n1" cx="110" cy="55" r="6" fill="url(#gold)"/>
+            <circle className="node n2" cx="165" cy="110" r="6" fill="url(#gold)"/>
+            <circle className="node n3" cx="110" cy="165" r="6" fill="url(#gold)"/>
+            <circle className="node n4" cx="55" cy="110" r="6" fill="url(#gold)"/>
 
-            <line className="line l1" x1="110" y1="84" x2="110" y2="61" stroke="currentColor" strokeWidth="2"/>
-            <line className="line l2" x1="136" y1="110" x2="159" y2="110" stroke="currentColor" strokeWidth="2"/>
-            <line className="line l3" x1="110" y1="136" x2="110" y2="159" stroke="currentColor" strokeWidth="2"/>
-            <line className="line l4" x1="84" y1="110" x2="61" y2="110" stroke="currentColor" strokeWidth="2"/>
+            <line className="line l1" x1="110" y1="84" x2="110" y2="61" stroke="url(#gold)" strokeWidth="2"/>
+            <line className="line l2" x1="136" y1="110" x2="159" y2="110" stroke="url(#gold)" strokeWidth="2"/>
+            <line className="line l3" x1="110" y1="136" x2="110" y2="159" stroke="url(#gold)" strokeWidth="2"/>
+            <line className="line l4" x1="84" y1="110" x2="61" y2="110" stroke="url(#gold)" strokeWidth="2"/>
           </svg>
         </div>
 
