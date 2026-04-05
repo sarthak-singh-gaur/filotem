@@ -101,7 +101,7 @@ export function CoverPage({ onLaunch }: { onLaunch: () => void }) {
           </button>
           
           <a 
-            href="/filotem-app.apk" 
+            href="/filotem.apk" 
             download
             // Fallback action if apk not available in public folder
             onClick={() => {
