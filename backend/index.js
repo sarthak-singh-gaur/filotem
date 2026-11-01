@@ -80,8 +80,13 @@ setupRedisAdapter(io);
 // MongoDB Connection
 // ---------------------------------------------------------------------------
 const connectDB = async () => {
+  const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
+  if (!mongoUri) {
+    logger.error('❌ MONGODB_URI is not set in environment.');
+    return;
+  }
   try {
-    await mongoose.connect(process.env.MONGODB_URI, {
+    await mongoose.connect(mongoUri, {
       socketTimeoutMS: 45000,
       family: 4, // Force IPv4 if needed
     });
@@ -146,7 +151,7 @@ app.use(globalErrorHandler);
 // Start Server
 // ---------------------------------------------------------------------------
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   logger.info(`🚀 Filotem API running on port ${PORT}`);
 });
 
