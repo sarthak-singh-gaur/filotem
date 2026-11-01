@@ -100,7 +100,8 @@ const connectDB = async () => {
       logger.warn('TIP [BAD SECRETS]: Database username or password is incorrect.');
       logger.warn('   -> Verify credentials in backend/.env MONGODB_URI.');
     }
-    process.exit(1);
+    logger.warn('Retrying MongoDB connection in 10 seconds...');
+    setTimeout(connectDB, 10000);
   }
 };
 
