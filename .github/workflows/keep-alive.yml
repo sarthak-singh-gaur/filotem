@@ -1,0 +1,29 @@
+name: Render Keep-Alive Tapper
+
+on:
+  schedule:
+    # Runs every 14 minutes to prevent Render free instance spin-down (inactivity threshold is 15 minutes)
+    - cron: '*/14 * * * *'
+  workflow_dispatch: # Allows manual trigger anytime from GitHub Actions tab
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Filotem Render Health Endpoint
+        run: |
+          URL="${{ secrets.RENDER_API_URL }}"
+          if [ -z "$URL" ]; then
+            echo "::warning ::RENDER_API_URL repository secret is not set yet. Please add your Render backend URL (e.g., https://filotem-backend.onrender.com) to GitHub Repo Settings > Secrets and variables > Actions."
+            exit 0
+          fi
+          # Strip trailing slash if present
+          URL="${URL%/}"
+          echo "Pinging $URL/api/health..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/api/health")
+          echo "Response HTTP Status: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "Success: Render instance is awake and healthy."
+          else
+            echo "::warning ::Endpoint returned HTTP status $HTTP_STATUS"
+          fi
