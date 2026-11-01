@@ -75,6 +75,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       newSocket.emit('register_user', user.id)
     })
 
+    newSocket.on('connect_error', (err) => {
+      console.warn('Socket connection error:', err.message)
+    })
+
     // Global Listeners
     newSocket.on('user_online', (userId: string) => {
       setOnlineUsers(prev => new Set([...prev, userId]))

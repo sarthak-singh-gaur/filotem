@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { authFetch } from '../../../utils/apiClient'
+import { uploadAvatar } from '../../../utils/uploadAvatar'
+import { useRegisterModal } from '../../../utils/backButton'
 import { useAuth } from '../../../context/useAuth'
 import { useSocket } from '../../../context/useSocket'
 
 export function ProfileModal({ onClose }: { onClose: () => void }) {
+  useRegisterModal(true, onClose)
   const { user, refreshSession } = useAuth()
   const { requestNotificationPermission } = useSocket()
   
@@ -14,6 +17,7 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
   const [allowNotifications, setAllowNotifications] = useState(user?.allowNotifications ?? true)
   const [publicOnlineStatus, setPublicOnlineStatus] = useState(user?.publicOnlineStatus ?? true)
   const [loading, setLoading] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [cropImage, setCropImage] = useState<string | null>(null)
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -34,9 +38,18 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
     e.target.value = ''
   }
 
-  const handleCropDone = (croppedDataUrl: string) => {
-    setAvatar(croppedDataUrl)
+  const handleCropDone = async (croppedDataUrl: string) => {
     setCropImage(null)
+    setUploadingAvatar(true)
+    try {
+      const hostedUrl = await uploadAvatar(croppedDataUrl)
+      setAvatar(hostedUrl)
+    } catch (err: any) {
+      console.error('Avatar upload failed:', err)
+      alert(err.message || 'Failed to upload avatar to cloud storage')
+    } finally {
+      setUploadingAvatar(false)
+    }
   }
 
   const handleSave = async (e: React.FormEvent) => {
@@ -84,18 +97,29 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
           {/* Avatar Section */}
           <div className="flex flex-col items-center justify-center space-y-3 relative">
             <div className="w-24 h-24 rounded-full border-4 border-stone-100 dark:border-stone-800 overflow-hidden bg-stone-100 dark:bg-stone-800 flex items-center justify-center text-3xl font-bold text-stone-300 relative group">
-              {avatar ? (
+              {uploadingAvatar ? (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10">
+                  <svg className="animate-spin h-7 w-7 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                  </svg>
+                </div>
+              ) : avatar ? (
                 <img src={avatar} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
                 name[0]?.toUpperCase() || '?'
               )}
               
-              <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity backdrop-blur-sm">
-                <svg className="w-6 h-6 text-white" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
-              </label>
+              {!uploadingAvatar && (
+                <label className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity backdrop-blur-sm">
+                  <svg className="w-6 h-6 text-white" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                </label>
+              )}
             </div>
-            <p className="text-xs text-stone-400 font-medium">Click image to upload DP (Max 5MB)</p>
+            <p className="text-xs text-stone-400 font-medium">
+              {uploadingAvatar ? 'Uploading avatar to cloud...' : 'Click image to upload DP (Max 5MB)'}
+            </p>
           </div>
 
           <div className="space-y-4">
@@ -179,10 +203,10 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
 
           <button 
             type="submit" 
-            disabled={loading}
+            disabled={loading || uploadingAvatar}
             className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white dark:bg-indigo-500 dark:hover:bg-indigo-600 rounded-xl font-bold tracking-wide transition-colors disabled:opacity-50"
           >
-            {loading ? 'Saving...' : 'Save Masterpiece Updates'}
+            {loading ? 'Saving...' : uploadingAvatar ? 'Uploading Image...' : 'Save Masterpiece Updates'}
           </button>
         </form>
 

@@ -26,4 +26,7 @@ const TableSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// "Find tables I belong to" — used in /init, /tables, unread-counts
+TableSchema.index({ members: 1 });
+
 module.exports = mongoose.model('Table', TableSchema);

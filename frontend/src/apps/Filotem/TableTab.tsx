@@ -20,70 +20,27 @@ interface TableDTO {
   description?: string
   members: Friend[]
   admins: Friend[]
+  isDirectMessage?: boolean
 }
 
 export function TableTab({ 
   onSelectFriend, 
   onSelectTable,
-  activeChatId
+  activeChatId,
+  friends,
+  tables
 }: { 
   onSelectFriend: (id: string, name: string, avatar?: string) => void,
   onSelectTable: (id: string, name: string, avatar?: string) => void,
-  activeChatId?: string
+  activeChatId?: string,
+  friends: Friend[],
+  tables: TableDTO[]
 }) {
-  const { socket, unreadCounts, setUnreadCounts, onlineUsers } = useSocket()
-  
-  const [friends, setFriends] = useState<Friend[]>([])
-  const [tables, setTables] = useState<TableDTO[]>([])
-  const [loading, setLoading] = useState(true)
+  const { unreadCounts, setUnreadCounts, onlineUsers } = useSocket()
   
   const [isCreating, setIsCreating] = useState(false)
   const [newTableName, setNewTableName] = useState('')
   const [viewProfileId, setViewProfileId] = useState<string | null>(null)
-
-  const fetchData = async () => {
-    try {
-      const [friendsData, tablesData, unreadsData] = await Promise.all([
-        authFetch('/api/friends').catch(err => { console.error(err); return []; }),
-        authFetch('/api/tables').catch(err => { console.error(err); return []; }),
-        authFetch('/api/messages/unread-counts').catch(err => { console.error(err); return {}; })
-      ])
-      setFriends(friendsData)
-      setTables(tablesData)
-      setUnreadCounts(unreadsData)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  // REAL-TIME UPDATES
-  useEffect(() => {
-    if (!socket) return
-
-    const handleRefresh = () => fetchData()
-    
-    const handleTableUpdate = (table: TableDTO) => {
-      setTables(prev => prev.map(t => t._id === table._id ? table : t))
-    }
-
-    socket.on('table_updated', handleTableUpdate)
-    socket.on('table_created', handleRefresh)
-    socket.on('table_deleted', handleRefresh)
-    socket.on('friend_accepted', handleRefresh)
-    socket.on('friend_removed', handleRefresh)
-
-    return () => {
-      socket.off('table_updated', handleTableUpdate)
-      socket.off('table_created', handleRefresh)
-      socket.off('table_deleted', handleRefresh)
-      socket.off('friend_accepted', handleRefresh)
-      socket.off('friend_removed', handleRefresh)
-    }
-  }, [socket])
 
   // Effect to automatically clear unread dots upon chat selection mapping
   useEffect(() => {
@@ -110,15 +67,12 @@ export function TableTab({
       })
       setNewTableName('')
       setIsCreating(false)
-      fetchData()
+      // Note: Backend emits table_created, which parent catches
     } catch (err) {
       console.error(err)
     }
   }
 
-  if (loading) {
-    return <div className="p-8 text-center text-stone-500">Loading your table...</div>
-  }
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-transparent overflow-hidden">

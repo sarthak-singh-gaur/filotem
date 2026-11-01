@@ -57,7 +57,15 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     default: null
-  }
+  },
+  deviceTokens: [{
+    token: { type: String, required: true },
+    platform: { type: String, enum: ['android', 'ios', 'web'], default: 'android' },
+    updatedAt: { type: Date, default: Date.now }
+  }]
 }, { timestamps: true });
+
+// User search by name (regex search in /api/users/search)
+UserSchema.index({ name: 1 });
 
 module.exports = mongoose.model('User', UserSchema);

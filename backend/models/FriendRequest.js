@@ -18,4 +18,10 @@ const FriendRequestSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// Pending requests lookup (used in /init)
+FriendRequestSchema.index({ to: 1, status: 1 });
+
+// Duplicate prevention: check if request already exists
+FriendRequestSchema.index({ from: 1, to: 1 });
+
 module.exports = mongoose.model('FriendRequest', FriendRequestSchema);

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { authFetch } from '../../../utils/apiClient'
+import { useRegisterModal } from '../../../utils/backButton'
 
 interface FriendProfile {
   _id: string
@@ -18,6 +19,7 @@ export function FriendProfileModal({
   friendId: string
   onClose: () => void 
 }) {
+  useRegisterModal(true, onClose)
   const [profile, setProfile] = useState<FriendProfile | null>(null)
   const [badges, setBadges] = useState<{ bestFriend: any; lover: any }>({ bestFriend: null, lover: null })
   const [loading, setLoading] = useState(true)

@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { authFetch } from '../../../utils/apiClient'
+import { uploadAvatar } from '../../../utils/uploadAvatar'
+import { useRegisterModal } from '../../../utils/backButton'
 import { useAuth } from '../../../context/useAuth'
 
 export function TableSettingsModal({ 
@@ -13,6 +15,7 @@ export function TableSettingsModal({
   onClose: () => void 
   onDelete?: () => void
 }) {
+  useRegisterModal(true, onClose)
   const { user } = useAuth()
   const [name, setName] = useState(tableName)
   const [avatar, setAvatar] = useState('')
@@ -20,6 +23,7 @@ export function TableSettingsModal({
   const [admins, setAdmins] = useState<string[]>([])
   const [friends, setFriends] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [error, setError] = useState('')
   const [confirmAction, setConfirmAction] = useState<{ type: 'kick' | 'delete'; memberId?: string } | null>(null)
 
@@ -55,11 +59,24 @@ export function TableSettingsModal({
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      if (file.size > 2 * 1024 * 1024) return alert('Image too large (max 2MB)')
+      if (file.size > 5 * 1024 * 1024) return alert('Image too large (max 5MB)')
       const reader = new FileReader()
-      reader.onloadend = () => setAvatar(reader.result as string)
+      reader.onloadend = async () => {
+        const base64 = reader.result as string
+        setUploadingAvatar(true)
+        try {
+          const hostedUrl = await uploadAvatar(base64)
+          setAvatar(hostedUrl)
+        } catch (err: any) {
+          console.error('Table icon upload failed:', err)
+          alert(err.message || 'Failed to upload table icon')
+        } finally {
+          setUploadingAvatar(false)
+        }
+      }
       reader.readAsDataURL(file)
     }
+    e.target.value = ''
   }
 
   const handleUpdate = async () => {
@@ -69,7 +86,7 @@ export function TableSettingsModal({
         method: 'PUT',
         data: { name, avatar }
       })
-      alert('Settings updated!')
+      // No alert - just close or show subtle indicator
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -79,29 +96,31 @@ export function TableSettingsModal({
 
   const handleKick = async (memberId: string) => {
     try {
+      // Optimistic: Remove from local display immediately
+      setMembers(prev => prev.filter(m => m._id !== memberId))
+      setConfirmAction(null)
+      
       await authFetch(`/api/tables/${tableId}/members/${memberId}`, {
         method: 'DELETE'
       })
-      setConfirmAction(null)
-      fetchTableDetails()
     } catch (err: any) {
-      alert(err.message)
+      console.error('Kick failed:', err.message)
+      fetchTableDetails() // Rollback if failed
     }
   }
 
   const handleDeleteTable = async () => {
+    // SNAP: Instant feedback
+    if (onDelete) onDelete()
+    onClose()
+
     try {
-      setLoading(true)
       await authFetch(`/api/tables/${tableId}`, {
         method: 'DELETE'
       })
-      alert('Table deleted successfully.')
-      if (onDelete) onDelete()
-      onClose()
     } catch (err: any) {
-      alert(err.message)
-    } finally {
-      setLoading(false)
+      console.error('Delete failed:', err.message)
+      // Note: Parent refreshKey will eventually sync the list anyway
     }
   }
 
@@ -146,13 +165,20 @@ export function TableSettingsModal({
           <div className="flex flex-col items-center gap-4">
             <div className="relative w-24 h-24 group">
               <div className="w-full h-full rounded-2xl bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center font-bold text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 overflow-hidden shadow-inner">
-                {avatar ? (
+                {uploadingAvatar ? (
+                  <div className="flex items-center justify-center">
+                    <svg className="animate-spin h-7 w-7 text-indigo-600 dark:text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                    </svg>
+                  </div>
+                ) : avatar ? (
                   <img src={avatar} className="w-full h-full object-cover" alt="Table Icon" />
                 ) : (
                   <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                 )}
               </div>
-              {isAdmin && (
+              {isAdmin && !uploadingAvatar && (
                 <label className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 text-white rounded-2xl opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity backdrop-blur-sm shadow-xl border border-white/20">
                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="mb-1"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
                   <span className="text-[10px] font-bold tracking-widest uppercase">Icon</span>
@@ -160,6 +186,7 @@ export function TableSettingsModal({
                 </label>
               )}
             </div>
+            {uploadingAvatar && <p className="text-xs text-indigo-500 font-medium animate-pulse">Uploading icon...</p>}
             {!isAdmin && avatar === '' && <p className="text-xs text-stone-500">No custom icon set</p>}
           </div>
 
@@ -177,10 +204,10 @@ export function TableSettingsModal({
               {isAdmin && (
                 <button 
                   onClick={handleUpdate}
-                  disabled={loading}
+                  disabled={loading || uploadingAvatar}
                   className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold disabled:opacity-50 hover:bg-indigo-700 transition"
                 >
-                  Save
+                  {loading ? 'Saving...' : uploadingAvatar ? 'Uploading...' : 'Save'}
                 </button>
               )}
             </div>

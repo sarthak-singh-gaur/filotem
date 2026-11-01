@@ -22,13 +22,15 @@ export function ChatRoom({
   friendName, 
   chatType = 'friend',
   avatar,
-  onBack 
+  onBack,
+  onDeleteTable
 }: { 
   friendId: string, 
   friendName: string, 
   chatType?: 'friend' | 'table',
   avatar?: string,
-  onBack: () => void 
+  onBack: () => void,
+  onDeleteTable?: () => void
 }) {
   const { user } = useAuth()
   const { socket, onlineUsers } = useSocket()
@@ -38,6 +40,8 @@ export function ChatRoom({
   const [showTableSettings, setShowTableSettings] = useState(false)
   const [showFriendOptions, setShowFriendOptions] = useState(false)
   const [showFriendProfile, setShowFriendProfile] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
   
   const [currentName, setCurrentName] = useState(friendName)
   const [currentAvatar, setCurrentAvatar] = useState(avatar)
@@ -48,6 +52,7 @@ export function ChatRoom({
   }, [friendName, avatar])
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
   const optionsMenuRef = useRef<HTMLDivElement>(null)
   
   // Close friend options on outside click
@@ -115,15 +120,47 @@ export function ChatRoom({
     scrollToBottom()
   }, [messages])
 
-  // Fetch History
+  // Fetch History (initial load — latest messages)
   const fetchMessages = async () => {
     try {
       const endpoint = chatType === 'table' ? `/api/messages/table/${friendId}` : `/api/messages/${friendId}`
       const res = await authFetch(endpoint)
-      setMessages(res)
+      setMessages(res.messages)
+      setHasMore(res.hasMore)
       markAsRead()
     } catch (err) {
       console.error(err)
+    }
+  }
+
+  // Load older messages when scrolling to top
+  const loadOlderMessages = async () => {
+    if (!hasMore || loadingMore || messages.length === 0) return
+    setLoadingMore(true)
+
+    const container = messagesContainerRef.current
+    const prevScrollHeight = container?.scrollHeight || 0
+
+    try {
+      const oldestId = messages[0]._id
+      const endpoint = chatType === 'table'
+        ? `/api/messages/table/${friendId}?before=${oldestId}`
+        : `/api/messages/${friendId}?before=${oldestId}`
+      const res = await authFetch(endpoint)
+      
+      setMessages(prev => [...res.messages, ...prev])
+      setHasMore(res.hasMore)
+
+      // Preserve scroll position after prepending
+      requestAnimationFrame(() => {
+        if (container) {
+          container.scrollTop = container.scrollHeight - prevScrollHeight
+        }
+      })
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingMore(false)
     }
   }
 
@@ -378,7 +415,25 @@ export function ChatRoom({
       </div>
 
       {/* Message Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 butter-scroll">
+      <div
+        ref={messagesContainerRef}
+        className="flex-1 overflow-y-auto p-4 space-y-4 butter-scroll"
+        onScroll={(e) => {
+          const target = e.currentTarget
+          if (target.scrollTop < 50 && hasMore && !loadingMore) {
+            loadOlderMessages()
+          }
+        }}
+      >
+        {loadingMore && (
+          <div className="flex items-center justify-center py-3 gap-2 text-stone-400 dark:text-stone-500">
+            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+            </svg>
+            <span className="text-xs font-medium">Loading older messages...</span>
+          </div>
+        )}
         {messages.map((msg) => {
           const senderId = typeof msg.sender === 'object' ? (msg.sender?._id || msg.sender) : msg.sender
           const isMine = senderId === user?.id
@@ -430,7 +485,7 @@ export function ChatRoom({
             tableId={friendId} 
             tableName={currentName} 
             onClose={() => setShowTableSettings(false)} 
-            onDelete={() => onBack()}
+            onDelete={onDeleteTable}
           />
         )}
         {showFriendProfile && chatType === 'friend' && (

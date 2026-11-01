@@ -16,22 +16,24 @@ interface RequestDTO {
   status: string
 }
 
-export function NetworkingTab() {
+export function NetworkingTab({ 
+  requests, 
+  badgeRequests, 
+  onRefresh 
+}: { 
+  requests: RequestDTO[], 
+  badgeRequests: BadgeRequestDTO[], 
+  onRefresh: () => void 
+}) {
   const { user } = useAuth()
   const { socket } = useSocket()
-  const [requests, setRequests] = useState<RequestDTO[]>([])
   const [searchResults, setSearchResults] = useState<UserDTO[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearching, setIsSearching] = useState(false)
   const [myFriendIds, setMyFriendIds] = useState<Set<string>>(new Set())
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set())
 
-  const fetchRequests = () => {
-    authFetch('/api/friends/requests')
-      .then(setRequests)
-      .catch(console.error)
-  }
-
+  // Initial friends lookup for search results (can still perform this locally or via prop)
   const fetchFriends = () => {
     authFetch('/api/friends')
       .then((data: any[]) => setMyFriendIds(new Set(data.map(f => f._id))))
@@ -39,28 +41,12 @@ export function NetworkingTab() {
   }
 
   useEffect(() => {
-    fetchRequests()
     fetchFriends()
   }, [])
 
-  // REAL-TIME UPDATES
+  // REAL-TIME UPDATES handled by parent via props
   useEffect(() => {
-    if (!socket) return
-
-    const handleRefresh = () => {
-      fetchRequests()
-      fetchFriends()
-    }
-
-    socket.on('friend_request', handleRefresh)
-    socket.on('friend_accepted', handleRefresh)
-    socket.on('friend_removed', handleRefresh)
-
-    return () => {
-      socket.off('friend_request', handleRefresh)
-      socket.off('friend_accepted', handleRefresh)
-      socket.off('friend_removed', handleRefresh)
-    }
+    fetchFriends()
   }, [socket])
 
   useEffect(() => {
@@ -86,7 +72,7 @@ export function NetworkingTab() {
   const handleAction = async (endpoint: string) => {
     try {
       await authFetch(endpoint, { method: 'PUT' })
-      fetchRequests()
+      onRefresh()
       fetchFriends() 
     } catch (err: any) {
       alert(err.message)
@@ -162,7 +148,7 @@ export function NetworkingTab() {
       </div>
 
       {/* Badge Requests Section */}
-      <BadgeRequestsSection />
+      <BadgeRequestsSection badgeRequests={badgeRequests} onRefresh={onRefresh} />
 
       {/* Search Section */}
       <div className="p-5 flex flex-col flex-1">
@@ -235,30 +221,17 @@ interface BadgeRequestDTO {
   type: 'bestFriend' | 'lover'
 }
 
-function BadgeRequestsSection() {
-  const { socket } = useSocket()
-  const [badgeRequests, setBadgeRequests] = useState<BadgeRequestDTO[]>([])
-
-  const fetchBadgeRequests = () => {
-    authFetch('/api/badges/requests')
-      .then((data: any) => setBadgeRequests(data.incoming || []))
-      .catch(console.error)
-  }
-
-  useEffect(() => {
-    fetchBadgeRequests()
-  }, [])
-
-  useEffect(() => {
-    if (!socket) return
-    socket.on('badge_request', fetchBadgeRequests)
-    return () => { socket.off('badge_request', fetchBadgeRequests) }
-  }, [socket])
-
+function BadgeRequestsSection({ 
+  badgeRequests, 
+  onRefresh 
+}: { 
+  badgeRequests: BadgeRequestDTO[], 
+  onRefresh: () => void 
+}) {
   const handleBadgeAction = async (id: string, action: 'accept' | 'reject') => {
     try {
       await authFetch(`/api/badges/requests/${id}/${action}`, { method: 'PUT' })
-      fetchBadgeRequests()
+      onRefresh()
     } catch (err: any) {
       alert(err.message)
     }

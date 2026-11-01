@@ -1,53 +1,123 @@
-
-import { useState } from 'react'
+import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Capacitor } from '@capacitor/core'
 import { AuthProvider } from './context/AuthProvider'
 import { SocketProvider } from './context/SocketContext'
 import { ThemeProvider } from './context/ThemeProvider'
 import { useAuth } from './context/useAuth'
 import { AuthPage } from './pages/AuthPage'
 import { CoverPage } from './pages/CoverPage'
-import { Capacitor } from '@capacitor/core'
 import FilotemApp from './apps/FilotemApp'
+import { initHardwareBackButton } from './utils/backButton'
 
-function AuthGate() {
-  const { user, isLoading } = useAuth()
-  const [showCover, setShowCover] = useState(!Capacitor.isNativePlatform())
+// Initialize Capacitor Android hardware back button handler
+initHardwareBackButton()
 
-  if (showCover) {
-    return <CoverPage onLaunch={() => setShowCover(false)} />
-  }
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60, // 1 minute
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+})
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-dvh items-center justify-center bg-stone-50 dark:bg-stone-950">
-        <div className="flex flex-col items-center gap-3">
-          <svg className="h-8 w-8 animate-spin text-stone-400 dark:text-stone-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-          </svg>
-          <p className="text-sm font-medium text-stone-500 dark:text-stone-400">Loading session…</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (!user) {
-    return <AuthPage />
-  }
-
+function LoadingScreen() {
   return (
-    <SocketProvider>
-      <FilotemApp />
-    </SocketProvider>
+    <div className="flex min-h-dvh items-center justify-center bg-stone-50 dark:bg-stone-950">
+      <div className="flex flex-col items-center gap-3">
+        <svg className="h-8 w-8 animate-spin text-stone-400 dark:text-stone-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
+        <p className="text-sm font-medium text-stone-500 dark:text-stone-400">Loading session…</p>
+      </div>
+    </div>
+  )
+}
+
+function RootRedirect() {
+  const { user, isLoading } = useAuth()
+
+  if (isLoading) return <LoadingScreen />
+  if (user) return <Navigate to="/app" replace />
+
+  // On native mobile app, go straight to auth. On web, show cover page.
+  if (Capacitor.isNativePlatform()) {
+    return <Navigate to="/auth" replace />
+  }
+  return <Navigate to="/cover" replace />
+}
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuth()
+
+  if (isLoading) return <LoadingScreen />
+  if (!user) return <Navigate to="/auth" replace />
+
+  return <>{children}</>
+}
+
+function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuth()
+
+  if (isLoading) return <LoadingScreen />
+  if (user) return <Navigate to="/app" replace />
+
+  return <>{children}</>
+}
+
+function CoverPageWrapper() {
+  const navigate = useNavigate()
+  return <CoverPage onLaunch={() => navigate('/auth')} />
+}
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<RootRedirect />} />
+      <Route
+        path="/cover"
+        element={
+          <PublicOnlyRoute>
+            <CoverPageWrapper />
+          </PublicOnlyRoute>
+        }
+      />
+      <Route
+        path="/auth"
+        element={
+          <PublicOnlyRoute>
+            <AuthPage />
+          </PublicOnlyRoute>
+        }
+      />
+      <Route
+        path="/app/*"
+        element={
+          <ProtectedRoute>
+            <SocketProvider>
+              <FilotemApp />
+            </SocketProvider>
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <AuthGate />
-      </AuthProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AuthProvider>
+          <HashRouter>
+            <AppRoutes />
+          </HashRouter>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   )
 }

@@ -34,7 +34,7 @@ router.post('/register', async (req, res) => {
 
     jwt.sign(
       { id: savedUser.id },
-      process.env.JWT_SECRET || 'fallback_secret_xyz123',
+      process.env.JWT_SECRET,
       { expiresIn: '7d' },
       (err, token) => {
         if (err) throw err;
@@ -79,7 +79,7 @@ router.post('/login', async (req, res) => {
 
     jwt.sign(
       { id: user.id },
-      process.env.JWT_SECRET || 'fallback_secret_xyz123',
+      process.env.JWT_SECRET,
       { expiresIn: '7d' },
       (err, token) => {
         if (err) throw err;

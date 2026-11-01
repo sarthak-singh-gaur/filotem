@@ -25,6 +25,7 @@ router.post('/', auth, async (req, res) => {
     // LIVELINESS: Notify all members to refresh their lists
     const io = req.app.get('io');
     if (io) {
+      console.log(`📢 Emitting table_created for table ${table._id} to ${table.members.length} members.`);
       table.members.forEach(memberId => {
         io.to(memberId.toString()).emit('table_created', table);
       });
@@ -113,14 +114,12 @@ router.put('/:id/update', auth, async (req, res) => {
 
     await table.save();
     
-    // Broadcast the updated table info to all members' personal sockets
+    // Broadcast the updated table info to all members' personal sockets (rooms)
     const io = req.app.get('io');
-    if (io && global.onlineUsers) {
+    if (io) {
+      console.log(`📢 Emitting table_updated for table ${table._id} to ${table.members.length} members.`);
       table.members.forEach(memberId => {
-        const socketId = global.onlineUsers.get(memberId.toString());
-        if (socketId) {
-          io.to(socketId).emit('table_updated', table);
-        }
+        io.to(memberId.toString()).emit('table_updated', table);
       });
     }
     
@@ -178,6 +177,7 @@ router.delete('/:id', auth, async (req, res) => {
     // LIVELINESS: Notify all members to refresh their lists
     const io = req.app.get('io');
     if (io) {
+      console.log(`📢 Emitting table_deleted for table ${req.params.id} to ${table.members.length} members.`);
       table.members.forEach(memberId => {
         io.to(memberId.toString()).emit('table_deleted', { tableId: req.params.id });
       });

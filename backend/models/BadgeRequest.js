@@ -23,4 +23,10 @@ const BadgeRequestSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+// Pending badge requests lookup (used in /init)
+BadgeRequestSchema.index({ to: 1, status: 1 });
+
+// Duplicate prevention: check existing badge request of same type
+BadgeRequestSchema.index({ from: 1, to: 1, type: 1 });
+
 module.exports = mongoose.model('BadgeRequest', BadgeRequestSchema);
